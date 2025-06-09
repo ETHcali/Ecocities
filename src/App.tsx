@@ -1,288 +1,348 @@
-import { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { DashboardContainer, Header, Title, TokenSymbol, Grid } from './styles/StyledComponents'
+import { useTranslation } from 'react-i18next'
+import styled, { createGlobalStyle } from 'styled-components'
+import { ThemeProvider } from './contexts/ThemeContext'
+import Navbar from './components/Navbar'
+import TokenMetricsModal from './components/TokenMetricsModal'
 import MetricCard from './components/MetricCard'
 import PriceChart from './components/PriceChart'
 import TransactionsTable from './components/TransactionsTable'
-import type { TokenMetric } from './types'
-import { getTokenInfo } from './services/pythonBackend'
-import styled from 'styled-components'
-import { theme } from './styles/theme'
+import './i18n'
 
 // Create a client
 const queryClient = new QueryClient()
 
-// New styled components for environmental focus
-const EcoLaunchBanner = styled.div`
-  background: linear-gradient(135deg, #2e7d32, #66bb6a, #4caf50); 
+const GlobalStyle = createGlobalStyle`
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: ${props => props.theme.colors.background};
+    color: ${props => props.theme.colors.text};
+    transition: all 0.3s ease;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: ${props => props.theme.colors.surface};
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: ${props => props.theme.colors.border};
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: ${props => props.theme.colors.primary};
+  }
+`;
+
+const AppContainer = styled.div`
+  min-height: 100vh;
+  padding-top: 70px; /* Account for fixed navbar */
+`;
+
+const HeroSection = styled.section`
+  background: ${props => props.theme.colors.gradient};
   color: white;
-  padding: ${theme.spacing.lg};
-  border-radius: ${theme.borderRadius.md};
-  margin-bottom: ${theme.spacing.lg};
+  padding: ${props => props.theme.spacing.xxl} ${props => props.theme.spacing.lg};
   text-align: center;
-  font-weight: bold;
-  font-size: ${theme.fontSizes.lg};
-  box-shadow: ${theme.shadows.elevated};
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+    opacity: 0.3;
+  }
 `;
 
-const SmartCityInfo = styled.div`
-  background-color: ${theme.colors.card};
-  padding: ${theme.spacing.lg};
-  border-radius: ${theme.borderRadius.md};
-  margin-bottom: ${theme.spacing.xl};
-  box-shadow: ${theme.shadows.card};
-  border-left: 4px solid #4caf50;
+const HeroContent = styled.div`
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
 `;
 
-const InfoGrid = styled.div`
+const HeroTitle = styled.h1`
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  margin-bottom: ${props => props.theme.spacing.lg};
+  line-height: 1.2;
+`;
+
+const HeroSubtitle = styled.p`
+  font-size: ${props => props.theme.fontSize.xl};
+  margin-bottom: ${props => props.theme.spacing.xl};
+  opacity: 0.9;
+  line-height: 1.6;
+`;
+
+const PreLaunchBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.sm};
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.lg};
+  border-radius: ${props => props.theme.borderRadius.xl};
+  font-weight: 600;
+  margin-bottom: ${props => props.theme.spacing.xl};
+  border: 1px solid rgba(255, 255, 255, 0.3);
+`;
+
+const MainContent = styled.main`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: ${props => props.theme.spacing.xxl} ${props => props.theme.spacing.lg};
+`;
+
+const Section = styled.section`
+  margin-bottom: ${props => props.theme.spacing.xxl};
+`;
+
+const SectionTitle = styled.h2`
+  font-size: ${props => props.theme.fontSize.xxl};
+  font-weight: 700;
+  color: ${props => props.theme.colors.text};
+  margin-bottom: ${props => props.theme.spacing.xl};
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${props => props.theme.spacing.sm};
+`;
+
+const MetricsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: ${theme.spacing.lg};
-  margin-bottom: ${theme.spacing.xl};
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: ${props => props.theme.spacing.xl};
+  margin-bottom: ${props => props.theme.spacing.xxl};
+`;
+
+const ChartContainer = styled.div`
+  background: ${props => props.theme.colors.surface};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.xl};
+  padding: ${props => props.theme.spacing.xl};
+  box-shadow: ${props => props.theme.colors.shadow};
+`;
+
+const FeatureGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: ${props => props.theme.spacing.xl};
+  margin-top: ${props => props.theme.spacing.xl};
 `;
 
 const FeatureCard = styled.div`
-  background-color: ${theme.colors.card};
-  padding: ${theme.spacing.lg};
-  border-radius: ${theme.borderRadius.md};
-  box-shadow: ${theme.shadows.card};
-  border-top: 3px solid #4caf50;
-`;
-
-const InfoTitle = styled.h2`
-  font-size: ${theme.fontSizes.xl};
-  color: ${theme.colors.text};
-  margin-top: 0;
-  margin-bottom: ${theme.spacing.md};
-  display: flex;
-  align-items: center;
-  gap: ${theme.spacing.sm};
-`;
-
-const InfoContent = styled.p`
-  font-size: ${theme.fontSizes.md};
-  color: ${theme.colors.text};
-  line-height: 1.6;
-  margin-bottom: ${theme.spacing.md};
-`;
-
-const HighlightText = styled.span`
-  color: #4caf50;
-  font-weight: bold;
-`;
-
-const LaunchCountdown = styled.div`
-  background: linear-gradient(135deg, #1b5e20, #388e3c);
-  color: white;
-  padding: ${theme.spacing.lg};
-  border-radius: ${theme.borderRadius.md};
-  margin-bottom: ${theme.spacing.xl};
+  background: ${props => props.theme.colors.surface};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.lg};
+  padding: ${props => props.theme.spacing.xl};
   text-align: center;
-  box-shadow: ${theme.shadows.elevated};
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: ${props => props.theme.colors.shadow};
+    border-color: ${props => props.theme.colors.primary};
+  }
 `;
 
-const CountdownValue = styled.div`
-  font-size: ${theme.fontSizes.xxl};
-  font-weight: bold;
-  margin: ${theme.spacing.md} 0;
+const FeatureIcon = styled.div`
+  font-size: 3rem;
+  margin-bottom: ${props => props.theme.spacing.lg};
 `;
 
-const CountdownLabel = styled.div`
-  font-size: ${theme.fontSizes.md};
-  opacity: 0.9;
+const FeatureTitle = styled.h3`
+  font-size: ${props => props.theme.fontSize.xl};
+  font-weight: 600;
+  color: ${props => props.theme.colors.text};
+  margin-bottom: ${props => props.theme.spacing.md};
 `;
 
-const PartnerBadge = styled.div`
-  display: inline-flex;
-  align-items: center;
-  background-color: #e8f5e8;
-  color: #2e7d32;
-  padding: ${theme.spacing.xs} ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.lg};
-  font-size: ${theme.fontSizes.sm};
-  font-weight: bold;
-  margin-top: ${theme.spacing.sm};
+const FeatureDescription = styled.p`
+  color: ${props => props.theme.colors.textSecondary};
+  line-height: 1.6;
 `;
 
-function Dashboard() {
-  const [tokenInfo, setTokenInfo] = useState({
-    name: 'Loading...',
-    symbol: '...',
-    totalSupply: '0',
-    decimals: '18',
-  })
-  
-  const [metrics, setMetrics] = useState<TokenMetric[]>([
-    { title: 'Community Holders', value: '0', icon: '👥' },
-    { title: 'Daily Volume', value: '0 COP', icon: '📊' },
-    { title: 'Waste Value Recovered', value: '0 kg', icon: '♻️' },
-    { title: 'Active Communities', value: '0', icon: '🏘️' },
-    { title: 'Solar Energy Generated', value: '0 kWh', icon: '☀️' },
-    { title: 'Governance Proposals', value: '0', icon: '🗳️' },
-  ])
-  
-  // Simulate days until launch
-  const [daysUntilLaunch, setDaysUntilLaunch] = useState(45);
-  
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch token info from Python backend
-        const infoResponse = await getTokenInfo()
-        setTokenInfo({
-          name: infoResponse.name || 'EcoCity Token',
-          symbol: infoResponse.symbol || 'ECT',
-          totalSupply: infoResponse.totalSupply || '0',
-          decimals: infoResponse.decimals || '18',
-        })
-        
-        // Generate realistic pre-launch metrics for environmental token
-        const holders = Math.floor(Math.random() * 150) + 50; // 50-200 early holders
-        const dailyVolume = Math.floor(Math.random() * 50000) + 10000; // 10k-60k COP daily
-        const wasteRecovered = Math.floor(Math.random() * 500) + 100; // 100-600 kg
-        const activeCommunities = Math.floor(Math.random() * 8) + 3; // 3-11 communities
-        const solarEnergy = Math.floor(Math.random() * 1000) + 200; // 200-1200 kWh
-        const proposals = Math.floor(Math.random() * 5) + 1; // 1-6 proposals
-        
-        setMetrics([
-          { 
-            title: 'Community Holders', 
-            value: holders.toLocaleString(),
-            change: 15.2,
-            isPositive: true,
-            icon: '👥'
-          },
-          { 
-            title: 'Daily Volume', 
-            value: `${dailyVolume.toLocaleString()} COP`,
-            change: 8.7,
-            isPositive: true,
-            icon: '📊'
-          },
-          { 
-            title: 'Waste Value Recovered', 
-            value: `${wasteRecovered.toLocaleString()} kg`,
-            change: 23.1,
-            isPositive: true,
-            icon: '♻️'
-          },
-          { 
-            title: 'Active Communities', 
-            value: activeCommunities.toString(),
-            change: 12.5,
-            isPositive: true,
-            icon: '🏘️'
-          },
-          { 
-            title: 'Solar Energy Generated', 
-            value: `${solarEnergy.toLocaleString()} kWh`,
-            change: 18.9,
-            isPositive: true,
-            icon: '☀️'
-          },
-          { 
-            title: 'Governance Proposals', 
-            value: proposals.toString(),
-            change: 25.0,
-            isPositive: true,
-            icon: '🗳️'
-          },
-        ])
-        
-        // Simulate countdown to launch
-        setDaysUntilLaunch(Math.floor(Math.random() * 31) + 30); // 30-60 days
-        
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-      }
-    }
-    
-    fetchData()
-    
-    // Refresh data every 2 minutes
-    const intervalId = setInterval(fetchData, 120000)
-    
-    return () => clearInterval(intervalId)
-  }, [])
+const AppContent: React.FC = () => {
+  const { t } = useTranslation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleWatchToken = () => {
+    setIsModalOpen(true);
+  };
+
+  // Sample metrics data for the new design
+
+  const mainMetrics = [
+    {
+      title: t('metrics.communityHolders'),
+      value: '2,547',
+      change: '+15.2%',
+      icon: '👥',
+      trend: 'up' as const,
+    },
+    {
+      title: t('metrics.wasteRecovered'),
+      value: '12,847',
+      unit: t('units.kg') + t('units.daily'),
+      change: '+8.7%',
+      icon: '♻️',
+      trend: 'up' as const,
+    },
+    {
+      title: t('metrics.solarEnergy'),
+      value: '4,523',
+      unit: t('units.kwh'),
+      change: '+12.3%',
+      icon: '☀️',
+      trend: 'up' as const,
+    },
+    {
+      title: t('metrics.dailyVolume'),
+      value: '2,847,593',
+      unit: t('units.cop'),
+      change: '+5.4%',
+      icon: '💰',
+      trend: 'up' as const,
+    },
+  ];
+
+  const features = [
+    {
+      icon: '♻️',
+      title: t('features.wasteToValue'),
+      description: t('features.wasteToValueDesc'),
+    },
+    {
+      icon: '🏛️',
+      title: t('features.communityGov'),
+      description: t('features.communityGovDesc'),
+    },
+    {
+      icon: '☀️',
+      title: t('features.renewableEnergy'),
+      description: t('features.renewableEnergyDesc'),
+    },
+    {
+      icon: '🌱',
+      title: t('features.smartCities'),
+      description: t('features.smartCitiesDesc'),
+    },
+  ];
 
   return (
-    <DashboardContainer>
-      <Header>
-        <Title>
-          {tokenInfo.name} <TokenSymbol>({tokenInfo.symbol})</TokenSymbol>
-        </Title>
-        <div>🌱 Smart City Governance Dashboard</div>
-      </Header>
-      
-      <EcoLaunchBanner>
-        🌍 Coming Soon: The First Waste-to-Value Token for Smart Cities in Colombia 🇨🇴
-      </EcoLaunchBanner>
-      
-      <SmartCityInfo>
-        <InfoTitle>
-          ♻️ Transforming Cities Through Community-Driven Waste Recovery
-        </InfoTitle>
-        <InfoContent>
-          <HighlightText>{tokenInfo.symbol}</HighlightText> is a revolutionary token that represents the real value recovered from urban waste. 
-          Each token is backed 1:1 by the Colombian Peso value of recycled materials and environmental services, 
-          creating a sustainable economy where communities are rewarded for maintaining clean public and natural spaces.
-        </InfoContent>
-        <PartnerBadge>
-          ⚡ Powered by Renewable Energy - Partner: heratech.com
-        </PartnerBadge>
-      </SmartCityInfo>
-      
-      <InfoGrid>
-        <FeatureCard>
-          <InfoTitle>🏛️ Self-Governing Communities</InfoTitle>
-          <InfoContent>
-            Token holders participate in democratic governance, voting on environmental initiatives, 
-            resource allocation, and community improvement projects. Each token represents a voice in building sustainable cities.
-          </InfoContent>
-        </FeatureCard>
+    <>
+      <GlobalStyle />
+      <AppContainer>
+        <Navbar onWatchToken={handleWatchToken} />
         
-        <FeatureCard>
-          <InfoTitle>🔋 Smart Infrastructure</InfoTitle>
-          <InfoContent>
-            Integrated with solar panels and battery systems from heratech.com, creating energy-autonomous 
-            waste collection points that power smart recycling systems and community services.
-          </InfoContent>
-        </FeatureCard>
-        
-        <FeatureCard>
-          <InfoTitle>📱 International Compliance</InfoTitle>
-          <InfoContent>
-            Built following the latest international environmental regulations and waste management protocols, 
-            ensuring global standards for sustainable urban development and circular economy practices.
-          </InfoContent>
-        </FeatureCard>
-      </InfoGrid>
-      
-      <LaunchCountdown>
-        <CountdownLabel>🚀 Community Governance Launch In</CountdownLabel>
-        <CountdownValue>{daysUntilLaunch} Days</CountdownValue>
-        <div style={{ opacity: 0.9, fontSize: theme.fontSizes.sm }}>
-          Join the revolution in urban sustainability and community empowerment
-        </div>
-      </LaunchCountdown>
-      
-      <Grid>
-        {metrics.map((metric, index) => (
-          <MetricCard key={index} metric={metric} />
-        ))}
-      </Grid>
-      
-      <PriceChart preLaunch={true} tokenType="environmental" />
-      
-      <TransactionsTable />
-    </DashboardContainer>
+        <HeroSection id="home">
+          <HeroContent>
+            <PreLaunchBadge>
+              🚀 {t('header.prelaunch')} - {t('header.comingSoon')}
+            </PreLaunchBadge>
+            <HeroTitle>{t('header.title')}</HeroTitle>
+            <HeroSubtitle>{t('header.subtitle')}</HeroSubtitle>
+            <p>{t('header.description')}</p>
+          </HeroContent>
+        </HeroSection>
+
+        <MainContent>
+          <Section id="dashboard">
+            <SectionTitle>
+              📊 {t('nav.dashboard')}
+            </SectionTitle>
+            <MetricsGrid>
+              {mainMetrics.map((metric, index) => (
+                <MetricCard key={index} {...metric} />
+              ))}
+            </MetricsGrid>
+          </Section>
+
+          <Section>
+            <SectionTitle>
+              📈 {t('chart.environmentalImpact')}
+            </SectionTitle>
+            <ChartContainer>
+              <PriceChart />
+            </ChartContainer>
+          </Section>
+
+          <Section>
+            <SectionTitle>
+              📊 {t('transactions.title')}
+            </SectionTitle>
+            <ChartContainer>
+              <TransactionsTable />
+            </ChartContainer>
+          </Section>
+
+          <Section id="about">
+            <SectionTitle>
+              🌍 {t('nav.about')} EcoCity Token
+            </SectionTitle>
+            <FeatureGrid>
+              {features.map((feature, index) => (
+                <FeatureCard key={index}>
+                  <FeatureIcon>{feature.icon}</FeatureIcon>
+                  <FeatureTitle>{feature.title}</FeatureTitle>
+                  <FeatureDescription>{feature.description}</FeatureDescription>
+                </FeatureCard>
+              ))}
+            </FeatureGrid>
+          </Section>
+        </MainContent>
+
+        <TokenMetricsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
+      </AppContainer>
+    </>
   )
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Dashboard />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }
