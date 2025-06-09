@@ -1,26 +1,15 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Dependencies
+# Dependency directories
 node_modules/
-jspm_packages/
 
-# Build outputs
-dist/
-dist-ssr/
-build/
+# Next.js build output
+.next/
+out/
+
+# Vercel
+.vercel
+
+# TypeScript build output
+*.tsbuildinfo
 
 # Environment variables
 .env
@@ -28,6 +17,54 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Large binary files
+*.node
+*.dll
+*.so
+*.dylib
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.bak
+
+# Build artifacts
+dist/
+build/
+
+# Miscellaneous
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Build outputs
+dist-ssr/
+
+# Environment variables
 *.local
 
 # Cache
@@ -64,12 +101,6 @@ temp/
 
 # Optional npm cache directory
 .npm
-
-# Optional eslint cache
-.eslintcache
-
-# Vercel
-.vercel
 
 # Python backend (if included)
 __pycache__/
