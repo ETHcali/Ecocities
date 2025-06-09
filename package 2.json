@@ -1,0 +1,75 @@
+{
+  "name": "ecocity-ppy-dashboard",
+  "version": "1.0.0",
+  "description": "🌱 EcoCity PPY Token Dashboard - Real-time blockchain data for sustainable cities. Domain: ecocities.ethcali.org",
+  "private": true,
+  "homepage": "https://ecocities.ethcali.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ethcali/ecocity-ppy-dashboard"
+  },
+  "keywords": [
+    "blockchain",
+    "sustainability",
+    "waste-management",
+    "optimism",
+    "erc20",
+    "nextjs",
+    "typescript",
+    "ppy-token",
+    "environmental-economics",
+    "circular-economy"
+  ],
+  "author": "EthCali <dev@ethcali.org>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf .next out dist",
+    "format": "prettier --write .",
+    "deploy:local": "./deploy.sh",
+    "deploy:vercel": "vercel --prod",
+    "analyze": "ANALYZE=true npm run build",
+    "test:build": "npm run build && npm run type-check"
+  },
+  "dependencies": {
+    "next": "^15.1.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "ethers": "^6.13.4",
+    "chart.js": "^4.4.7",
+    "react-chartjs-2": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.7.2",
+    "tailwindcss": "^3.4.17",
+    "postcss": "^8.5.4",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.1.3",
+    "prettier": "^3.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
